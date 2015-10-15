@@ -5,6 +5,10 @@ if (!preg_match('/^[a-zA-Z0-9_-]+$/', $repo)) {
 }
 
 $object = $_REQUEST['o'];
+if (!preg_match('/^[0-9a-f]+$/', $object)) {
+    die('Invalid Object ID');
+}
+
 $path = $_REQUEST['p'];
 
 $base = __dir__ . '/' . $repo . '.git';
