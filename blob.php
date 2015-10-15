@@ -1,10 +1,9 @@
 <?php
 require(__dir__ . '/git.php');
-ini_set('display_errors', 1);
+
 $repo = new Git($_REQUEST['r']);
 
 $oid = $_REQUEST['o'];
-
 $repo->validateObjectID($oid);
 
 $path = htmlspecialchars($_REQUEST['p'], ENT_QUOTES, 'UTF-8');
