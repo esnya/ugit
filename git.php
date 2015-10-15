@@ -25,14 +25,32 @@ class Git {
         }
     }
 
+    public function getPackInfo() {
+        return array_map(function ($line) {
+            $exploded = explode(' ', $line);
+            return $exploded[1];
+        }, preg_split('/[\r\n]+/', file_get_contents($this->getPath() . '/objects/info/packs')));
+    }
+
+    public function readPack($pack) {
+        $path = $this->getPath() . '/objects/pack/' . preg_replace('/\.pack$/', '.idx', $pack);
+        return /*gzuncompress*/(file_get_contents($path));
+    }
+
     public function getObject($id) {
         $this->validateObjectID($id);
         $path = $this->getPath() . '/objects/' . substr($id, 0, 2) . '/' . substr($id, 2);
+        if (!file_exists($path)) {
+            $packInfo = $this->getPackInfo();
+            var_dump($this->readPack($packInfo[0]));
+        }
+
         return new GitObject(gzuncompress(file_get_contents($path)));
     }
 
     public function getMaster() {
-        $data = $this->getObject(trim(file_get_contents($this->getPath() . '/refs/heads/master')))->pop()->data;
+        $path = $this->getPath() . '/refs/heads/master';
+        $data = $this->getObject(trim(file_get_contents($path)))->pop()->data;
         $master = array();
         foreach(preg_split('/[\r\n]+/', $data) as $line) {
             if (preg_match('/^([^ \t]+)[ \t]+(.+)$/', $line, $matches)) {
