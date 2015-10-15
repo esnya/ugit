@@ -1,6 +1,5 @@
 <?php
 require(__dir__ . '/git.php');
-ini_set('display_errors', 1);
 
 $repo = new Git($_REQUEST['r']);
 $master = $repo->getMaster();
