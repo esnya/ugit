@@ -21,48 +21,42 @@ class Git {
         }
     }
 
-    public function catFile($id) {
-        $gitDir = escapeshellarg($this->getPath());
-        $_id = escapeshellarg($id); 
-        return shell_exec("git --git-dir={$gitDir} cat-file -p {$_id}");
+    public function getObject($id) {
+        $path = $this->getPath() . '/objects/' . substr($id, 0, 2) . '/' . substr($id, 2);
+        return new GitObject(gzuncompress(file_get_contents($path)));
     }
 
     public function getMaster() {
-        $raw = $this->catFile(trim(file_get_contents($this->getPath() . '/refs/heads/master')));
+        $data = $this->getObject(trim(file_get_contents($this->getPath() . '/refs/heads/master')))->pop()->data;
         $master = array();
-        foreach(preg_split('/[\r\n]+/', $raw) as $line) {
+        foreach(preg_split('/[\r\n]+/', $data) as $line) {
             if (preg_match('/^([^ \t]+)[ \t]+(.+)$/', $line, $matches)) {
                 $master[$matches[1]] = $matches[2];
             } else {
                 $master[] = $line;
             }
         }
-        return $master;
+        return (object)$master;
     }
 
-    public function traceTree($id, $path = '') {
-        $tree = $this->catFile($id);
-
-        $items = array_filter(array_map(function($line) {
-            return preg_split('/[ \t]+/', $line);
-        }, explode("\n", $tree)), function($item) {
-            return count($item) == 4;
-        });
+    public function traceTree($root, $path = '') {
+        $tree = new GitTree($this->getObject($root));
 
         ob_start();
         echo '<ul>';
-        foreach ($items as $item) {
+        while ($item = $tree->pop()) {
+            $type = $this->getObject($item->hash)->pop()->type;
             echo '<li>';
-            if ($item[1] == 'blob') {
-                $href = "blob.php?r={$this->name}&o={$item[2]}&p={$path}/{$item[3]}";
+            if ($type == 'blob') {
+                $href = "blob.php?r={$this->name}&o={$item->hash}&p={$path}/{$item->name}";
                 echo "<a href=\"$href\">";
-                echo $item[3];
+                echo $item->name;
                 echo '</a>';
-            } else if ($item[1] == 'tree') {
-                echo $item[3]; echo '/';
-                echo $this->traceTree($item[2], $path . '/' . $item[3]);
+            } else if ($type == 'tree') {
+                echo $item->name; echo '/';
+                echo $this->traceTree($item->hash, $path . '/' . $item->name);
             } else {
-                echo $item[3];
+                echo 'Unknown object type: ' . $type;
             }
             echo '</li>';
         }
@@ -73,5 +67,77 @@ class Git {
     static public function getAllRepositories() {
         global $list;
         return $list;
+    }
+}
+
+class GitObjectReader {
+    public function pop() {
+        $pos = strpos($this->data, "\0");
+
+        if ($pos == false) return FALSE;
+
+        return $this->_pop($pos);
+    }
+
+    public function toArray() {
+        $array = array();
+
+        while ($data = $this->pop()) {
+            $array[] = $data;
+        }
+
+        return $array;
+    }
+
+    protected function _popData($n) {
+        $this->data = substr($this->data, $n);
+    }
+
+    protected function _pop() {
+        return FALSE;
+    }
+}
+
+class GitObject extends GitObjectReader {
+    public function __construct($data) {
+        $this->data = $data;
+    }
+
+    protected function _pop($pos) {
+        $header = explode(' ', substr($this->data, 0, $pos));
+        $type = $header[0];
+        $size = (int)$header[1];
+
+        $data = substr($this->data, $pos + 1, $size);
+
+        $this->_popData($pos + 1 + $size);
+
+        return (object)array(
+            'type' => $type,
+            'size' => $size,
+            'data' => $data,
+        );
+    }
+}
+
+class GitTree extends GitObjectReader {
+    public function __construct(GitObject $object) {
+        $this->data = $object->pop()->data;
+    }
+
+    protected function _pop($pos) {
+        $header = explode(' ', substr($this->data, 0, $pos));
+
+        $mode = $header[0];
+        $name = $header[1];
+        $hash = bin2hex(substr($this->data, $pos + 1, 20));
+
+        $this->_popData($pos + 1 + 20);
+
+        return (object)array(
+            'mode' => $mode,
+            'name' => $name,
+            'hash' => $hash,
+        );
     }
 }

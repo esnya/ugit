@@ -1,7 +1,10 @@
 <?php
 require(__dir__ . '/git.php');
+ini_set('display_errors', 1);
+
 $repo = new Git($_REQUEST['r']);
 $master = $repo->getMaster();
+$tree = new GitTree($repo->getObject($repo->getMaster()->tree));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,6 +15,6 @@ $master = $repo->getMaster();
 <body>
 <h1><a href="./">UGit</a></h1>
 <h2><?php echo $repo->name ?></h2>
-<?php echo $repo->traceTree($master['tree']); ?>
+<?php echo $repo->traceTree($master->tree); ?>
 </body>
 </html>
