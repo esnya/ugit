@@ -1,6 +1,10 @@
 <?php
 require_once(__dir__ . '/conf.php');
 
+if ($config['debug']) {
+    ini_set('display_errors', 1);
+}
+
 class Git {
     public function __construct($name) {
         if (!preg_match('/^[a-zA-Z0-9_-]+$/', $name) || !array_key_exists($name, Git::getAllRepositories())) {
@@ -22,6 +26,7 @@ class Git {
     }
 
     public function catFile($id) {
+        $this->validateObjectID($id);
         $gitDir = escapeshellarg($this->getPath());
         $_id = escapeshellarg($id); 
         return shell_exec("git --git-dir={$gitDir} cat-file -p {$_id}");
@@ -71,7 +76,7 @@ class Git {
     }
 
     static public function getAllRepositories() {
-        global $list;
-        return $list;
+        global $config;
+        return $config['list'];
     }
 }
