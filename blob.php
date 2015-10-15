@@ -24,7 +24,7 @@ function catFile($id) {
 <h1><a href="./">Git</a></h1>
 <h2><a href="repo.php?r=<?php echo $repo ?>"><?php echo $repo ?></a><?php echo $path ?></h2>
 <pre>
-<?php echo catFile($object) ?>
+<code><?php echo str_replace('<', '&lt;', str_replace('>', '&gt;', catFile($object))) ?></code>
 </pre>
 </body>
 </html>
