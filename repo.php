@@ -1,6 +1,4 @@
 <?php
-//ini_set('display_errors', 1);
-
 $repo = $_REQUEST['r'];
 if (!preg_match('/^[a-zA-Z0-9_-]+$/', $repo)) {
     die('Invalid Repository Name');
