@@ -27,7 +27,7 @@ if (preg_match('/\.d$/', $path)) {
 
     $context = null;
 
-    function syntax($class) {
+    function syntax($class = null) {
         global $context, $dst;
 
         if ($context != $class) {
@@ -109,7 +109,13 @@ if (preg_match('/\.d$/', $path)) {
         }
     }
 
-    $data = $dst;
+    $data = $dst . '</code>';
+}
+
+$l = count(preg_split('/\r?\n/', $data));
+$lines = '';
+for ($i = 1; $i <= $l; $i++) {
+    $lines .= "<code>$i</code>\r\n";
 }
 ?>
 <!DOCTYPE html>
@@ -118,6 +124,17 @@ if (preg_match('/\.d$/', $path)) {
     <meta charset="UTF-8">
     <title><?php echo $path ?> - UGit</title>
     <style>
+.blob {
+    display: flex;
+}
+
+.blob > .line {
+    text-align: right;
+    color: #888888;
+    margin-right: 0.5em;
+}
+
+
 .syntax-char { color: #55aa00; }
 .syntax-comment { color: gray; }
 .syntax-error { color: white; background: red; }
@@ -131,8 +148,9 @@ if (preg_match('/\.d$/', $path)) {
 <body>
 <h1><a href="./">UGit</a></h1>
 <h2><a href="tree.php?r=<?php echo $repo->name ?>"><?php echo $repo->name ?></a><?php echo $path ?></h2>
-<pre>
-<code><?php echo $data ?></code>
-</pre>
+<div class="blob">
+<pre class="line"><?php echo $lines ?></pre>
+<pre class="code"><?php echo $data ?></pre>
+</div>
 </body>
 </html>
